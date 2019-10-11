@@ -12,7 +12,8 @@
 #
 #==============================================================================#
 
-VERSION="v2019082800"
+#VERSION="v2019082800"
+VERSION="v2019093000"
 
 #------------------------------------------------------------------------------#
 
@@ -81,13 +82,13 @@ Beispiel:
 #------------------------------------------------------------------------------#
 
 if [ -e "$1" ] ; then
-        hilfe
-        exit 2
+	hilfe
+	exit 2
 fi
 
 if [ "x$3" == x ] ; then
-        hilfe
-        exit 2
+	hilfe
+	exit 3
 fi
 
 #------------------------------------------------------------------------------#
@@ -96,13 +97,14 @@ fi
 #set -x
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-LANG=C          # damit AWK richtig rechnet
+LANG=C		# damit AWK richtig rechnet
+SCHNELLSTART="-movflags faststart"
 
 #==============================================================================#
 
 if [ -z "$1" ] ; then
-        echo "${0} Filmfertig [Filmteil1.mp4] [Filmteil2.mp4] [Filmteil3.mp4]"
-        exit 1
+	echo "${0} Filmfertig [Filmteil1.mp4] [Filmteil2.mp4] [Filmteil3.mp4]"
+	exit 4
 fi
 
 AUFRUF="${0} $@"
@@ -117,7 +119,7 @@ fi
 
 if [ -z "${PROGRAMM}" ] ; then
         echo "Weder avconv noch ffmpeg konnten gefunden werden. Abbruch!"
-        exit 1
+        exit 5
 fi
 
 #==============================================================================#
@@ -133,22 +135,22 @@ echo "${AUFRUF}" > ${NAME_NEU}.txt
 
 for FILMDATEI in ${FILM_TEILE}
 do
-        echo | tee -a ${NAME_NEU}.txt
-        echo "-> ${FILMDATEI}" | tee -a ${NAME_NEU}.txt
+	echo | tee -a ${NAME_NEU}.txt
+	echo "-> ${FILMDATEI}" | tee -a ${NAME_NEU}.txt
 
-        if [ ! -r "${FILMDATEI}" ] ; then
-                echo "Der Film '${FILMDATEI}' konnte nicht gefunden werden. Abbruch!"
-                exit 1
-        else
-                ### Anzeige, welche Spuren im Film vorhanden sind
-                echo "Video     ->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Video:')" | tee -a ${NAME_NEU}.txt
-                echo "Audio     ->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Audio:')" | tee -a ${NAME_NEU}.txt
-                echo "Untert.   ->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Subtitle:')" | tee -a ${NAME_NEU}.txt
+	if [ ! -r "${FILMDATEI}" ] ; then
+        	echo "Der Film '${FILMDATEI}' konnte nicht gefunden werden. Abbruch!"
+        	exit 6
+	else
+		### Anzeige, welche Spuren im Film vorhanden sind
+		echo "Video	->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Video:')" | tee -a ${NAME_NEU}.txt
+		echo "Audio	->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Audio:')" | tee -a ${NAME_NEU}.txt
+		echo "Untert.	->  $(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Subtitle:')" | tee -a ${NAME_NEU}.txt
 
-                ### den Film in die Filmliste eintragen
-                echo "echo \"file '${FILMDATEI}'\" >> ${NAME_NEU}_Filmliste.txt" | tee -a ${NAME_NEU}.txt
-                echo "file '${FILMDATEI}'" >> ${NAME_NEU}_Filmliste.txt
-        fi
+		### den Film in die Filmliste eintragen
+		echo "echo \"file '${FILMDATEI}'\" >> ${NAME_NEU}_Filmliste.txt" | tee -a ${NAME_NEU}.txt
+		echo "file '${FILMDATEI}'" >> ${NAME_NEU}_Filmliste.txt
+	fi
 done
 
 #==============================================================================#
@@ -157,13 +159,13 @@ done
 UNTERTITEL_VORHANDEN="$(ffmpeg -i ${NAME_TEST} 2>&1 | fgrep 'Subtitle:' | awk '{print $1}')"
 
 if [ "x${UNTERTITEL_VORHANDEN}" != "x" ] ; then
-        UNTERTITEL_AN="-c:s copy"
+	UNTERTITEL_AN="-c:s copy"
 fi
 
 echo "
-ffmpeg -f concat -i ${NAME_NEU}_Filmliste.txt -c:v copy -c:a copy ${UNTERTITEL_AN} -f mp4 -y ${NAME_NEU}.mp4
+ffmpeg -f concat -i ${NAME_NEU}_Filmliste.txt -c:v copy -c:a copy ${UNTERTITEL_AN} ${SCHNELLSTART} -f mp4 ${NAME_NEU}.mp4
 " | tee -a ${NAME_NEU}.txt
-ffmpeg -f concat -i ${NAME_NEU}_Filmliste.txt -c:v copy -c:a copy ${UNTERTITEL_AN} -f mp4 -y ${NAME_NEU}.mp4
+ffmpeg -f concat -i ${NAME_NEU}_Filmliste.txt -c:v copy -c:a copy ${UNTERTITEL_AN} ${SCHNELLSTART} -f mp4 ${NAME_NEU}.mp4
 
 #------------------------------------------------------------------------------#
 
